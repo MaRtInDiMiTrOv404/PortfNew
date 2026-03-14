@@ -636,6 +636,235 @@
     // Invincibility
     if (player.invincible > 0) player.invincible--;
 
-    // Camera
+ // Camera
     const targetX = player.x - CANVAS_W * 0.35;
-    camera.x = Math.max(0, Math.
+    camera.x = Math.max(0, Math.min(targetX, WORLD_W - CANVAS_W));
+
+    // Flag
+    if (!level.flag.collected && Math.abs(player.x - level.flagX) < 40 && player.y + PLAYER_H > level.flagY) {
+      level.flag.collected = true;
+      score += 2000;
+      setTimeout(() => { gameState = 'win'; }, 800);
+    }
+
+    updateUI();
+  }
+
+  function playerDie() {
+    if (player.dead) return;
+    player.dead = true;
+    player.vy = JUMP_FORCE;
+    lives--;
+    updateUI();
+    setTimeout(() => {
+      if (lives <= 0) { gameState = 'gameover'; }
+      else {
+        resetPlayer();
+        camera.x = 0;
+        gameState = 'dead_wait';
+        setTimeout(() => { gameState = 'playing'; }, 100);
+      }
+    }, 1200);
+  }
+
+  // ---- DRAW ----
+  function drawTile(sprite, x, y) {
+    const sx = x - camera.x;
+    if (sx < -TILE || sx > CANVAS_W + TILE) return;
+    ctx.drawImage(sprite, sx, y);
+  }
+
+  function draw() {
+    // Sky gradient
+    const sky = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
+    sky.addColorStop(0, '#5c94fc');
+    sky.addColorStop(1, '#9ec5fe');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // Decorations (clouds, mountains)
+    for (const d of level.decorations) {
+      const sx = d.x - camera.x * 0.4; // parallax
+      if (sx < -120 || sx > CANVAS_W + 120) continue;
+      if (d.type === 'cloud') ctx.drawImage(cloudSprite, sx, d.y);
+      if (d.type === 'mountain') ctx.drawImage(mountainSprite, sx, d.y);
+    }
+
+    // Platforms
+    for (const plat of level.platforms) {
+      const sx = plat.x - camera.x;
+      if (sx < -TILE || sx > CANVAS_W + TILE) continue;
+      if (plat.type === 'ground') ctx.drawImage(groundTile, sx, plat.y);
+      else if (plat.type === 'brick') ctx.drawImage(brickTile, sx, plat.y);
+      else if (plat.type === 'question') ctx.drawImage(qBlock, sx, plat.y);
+      else if (plat.type === 'used') ctx.drawImage(usedBlock, sx, plat.y);
+    }
+
+    // Pipes
+    for (const pipe of level.pipes) {
+      const sx = pipe.x - camera.x;
+      if (sx < -50 || sx > CANVAS_W + 50) continue;
+      ctx.drawImage(pipeSprite, sx, pipe.y);
+    }
+
+    // Coins
+    for (const coin of level.coins) {
+      if (coin.collected) continue;
+      const sx = coin.x - camera.x;
+      if (sx < -20 || sx > CANVAS_W + 20) continue;
+      ctx.drawImage(coinSheet, coin.frame * COIN_SIZE, 0, COIN_SIZE, COIN_SIZE, sx - COIN_SIZE/2, coin.y - COIN_SIZE/2, COIN_SIZE, COIN_SIZE);
+    }
+
+    // Coin effects
+    for (const ef of coinEffects) {
+      if (ef.life > 0) {
+        ctx.globalAlpha = ef.life / 40;
+        ctx.drawImage(coinSheet, 0, 0, COIN_SIZE, COIN_SIZE, ef.x - camera.x - COIN_SIZE/2, ef.y - COIN_SIZE/2, COIN_SIZE, COIN_SIZE);
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // Enemies
+    for (const en of level.enemies) {
+      const sx = en.x - camera.x;
+      if (sx < -40 || sx > CANVAS_W + 40) continue;
+      if (en.dead) {
+        // Squished goomba
+        ctx.drawImage(goombaTile, 0, 0, 32, 32, sx, en.y + 20, 32, 12);
+      } else {
+        ctx.drawImage(goombaTile, en.frame * 32, 0, 32, 32, sx, en.y, 32, 32);
+      }
+    }
+
+    // Flag
+    {
+      const sx = level.flagX - camera.x;
+      if (sx > -20 && sx < CANVAS_W + 20) {
+        ctx.drawImage(flagSprite, sx, level.flagY);
+      }
+    }
+
+    // Player
+    if (!player.dead || Math.floor(Date.now() / 100) % 2 === 0) {
+      if (player.invincible > 0 && Math.floor(player.invincible / 4) % 2 === 0) {
+        // blink
+      } else {
+        const sx = player.x - camera.x;
+        const frame = player.frame;
+        ctx.save();
+        if (player.facing === -1) {
+          ctx.translate(sx + PLAYER_W, player.y);
+          ctx.scale(-1, 1);
+          ctx.drawImage(playerSheet, frame * PLAYER_W, 0, PLAYER_W, PLAYER_H, 0, 0, PLAYER_W, PLAYER_H);
+        } else {
+          ctx.drawImage(playerSheet, frame * PLAYER_W, 0, PLAYER_W, PLAYER_H, sx, player.y, PLAYER_W, PLAYER_H);
+        }
+        ctx.restore();
+      }
+    }
+
+    // Score particles
+    for (const ef of coinEffects) {
+      if (ef.life > 0) {
+        ctx.fillStyle = `rgba(255,215,0,${ef.life/40})`;
+        ctx.font = 'bold 12px monospace';
+        ctx.fillText('+50', ef.x - camera.x - 10, ef.y - (40 - ef.life) * 1.5);
+      }
+    }
+
+    // Overlays
+    if (gameState === 'start') {
+      drawOverlay('🍄 SUPER MARTIN', 'Натисни ENTER или докосни екрана', '#FFD700');
+    } else if (gameState === 'dead_wait') {
+      drawOverlay('💀 ЗАГУБИ ЖИВОТ!', `Останали животи: ${lives}`, '#FF6B6B');
+    } else if (gameState === 'gameover') {
+      drawOverlay('GAME OVER', 'Натисни ENTER за рестарт', '#FF3838');
+    } else if (gameState === 'win') {
+      drawOverlay('🎉 ПОБЕДА!', `Резултат: ${score}`, '#FFD700');
+    }
+  }
+
+  function drawOverlay(title, sub, color) {
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    ctx.font = 'bold 36px "Courier New", monospace';
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center';
+    ctx.fillText(title, CANVAS_W/2, CANVAS_H/2 - 20);
+    ctx.font = '18px "Courier New", monospace';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(sub, CANVAS_W/2, CANVAS_H/2 + 20);
+    ctx.textAlign = 'left';
+  }
+
+  // ---- MAIN LOOP ----
+  function loop(ts) {
+    const dt = Math.min((ts - lastTime) / 16.67, 3);
+    lastTime = ts;
+    update(dt);
+    draw();
+    animFrame = requestAnimationFrame(loop);
+  }
+
+  // ---- INPUT ----
+  window.addEventListener('keydown', e => {
+    keys[e.key] = true;
+    if ((e.key === 'Enter' || e.key === ' ') && gameState === 'start') {
+      gameState = 'playing';
+      e.preventDefault();
+    }
+    if (e.key === 'Enter' && gameState === 'gameover') {
+      restartGame();
+    }
+    if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+    }
+  });
+  window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+  canvas.addEventListener('click', () => {
+    if (gameState === 'start') gameState = 'playing';
+    if (gameState === 'gameover') restartGame();
+  });
+
+  function restartGame() {
+    score = 0; lives = 3; coinsCollected = 0;
+    level = buildLevel();
+    resetPlayer();
+    camera.x = 0;
+    gameState = 'playing';
+    updateUI();
+  }
+
+  // Mobile buttons
+  const btnLeft = document.getElementById('btn-left');
+  const btnRight = document.getElementById('btn-right');
+  const btnJump = document.getElementById('btn-jump');
+  if (btnLeft) {
+    btnLeft.addEventListener('touchstart', e => { touchLeft = true; e.preventDefault(); }, { passive: false });
+    btnLeft.addEventListener('touchend', e => { touchLeft = false; e.preventDefault(); }, { passive: false });
+    btnRight.addEventListener('touchstart', e => { touchRight = true; e.preventDefault(); }, { passive: false });
+    btnRight.addEventListener('touchend', e => { touchRight = false; e.preventDefault(); }, { passive: false });
+    btnJump.addEventListener('touchstart', e => {
+      touchJump = true;
+      if (gameState === 'start') gameState = 'playing';
+      e.preventDefault();
+    }, { passive: false });
+    btnJump.addEventListener('touchend', e => { touchJump = false; e.preventDefault(); }, { passive: false });
+  }
+
+  // Resize canvas for mobile
+  function resizeCanvas() {
+    const wrapper = canvas.parentElement;
+    if (!wrapper) return;
+    const maxW = Math.min(wrapper.clientWidth - 8, 800);
+    canvas.style.width = maxW + 'px';
+    canvas.style.height = (maxW * 400 / 800) + 'px';
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // Start loop
+  requestAnimationFrame(loop);
+})();
+          
