@@ -190,9 +190,68 @@
                         </div>
                     </div>
                     
-                    <div>              
-                        <img src="assets/img/work3.jpg" alt="Примерен проект" class="skills__img">
-                    </div>
+                            <style>
+        /* Основен контейнер */
+        .skills__main-container {
+            display: flex;
+            flex-direction: column; /* Елементите се подреждат един под друг */
+            align-items: center; /* Центриране хоризонтално */
+            gap: 20px; /* Разстояние между снимката и бутона */
+            padding: 20px;
+        }
+
+        /* Стил за оригиналната снимка */
+        .skills__img {
+            max-width: 100%; /* За да не излиза от екрана на телефон */
+            height: auto;
+            border-radius: 10px; /* Малко заоблени краища за снимката */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); /* Лека сянка */
+        }
+
+        /* Стил за новия лимонен бутон */
+        .lemon-button {
+            display: inline-block;
+            padding: 15px 30px;
+            background-color: #f1c40f; /* Лимонено жълто */
+            color: #2c3e50; /* Тъмно сиво за текст */
+            text-decoration: none;
+            font-size: 1.3rem;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+            border-radius: 50px;
+            border: 3px solid #f39c12;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        /* Ефекти за бутона */
+        .lemon-button:hover {
+            background-color: #f39c12;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .lemon-button:active {
+            transform: translateY(1px);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="skills__main-container">
+        
+        <div>              
+            <img src="assets/img/work3.jpg" alt="НАТИСНИ ТУК АКО СМЕЕШ" class="skills__img">
+        </div>
+
+        <a href="https://martindimitrov404.github.io/PictureCapture-/" class="lemon-button">
+            НАТИСНИ ТУК!!! 🍋🍋🍋
+        </a>
+
+    </div>
+                    
                 </div>
             </section>
 
