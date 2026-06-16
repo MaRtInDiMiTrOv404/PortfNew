@@ -746,6 +746,21 @@ body.dark-theme .nav__list {
   .nav__toggle { display: none; }
   .nav__link { color: var(--title-color); }
 
+  /* Fix: ensure nav items aren't boxed in dark theme on desktop */
+  body.dark-theme .nav__list {
+    background: transparent !important;
+    border-left: none !important;
+    box-shadow: none !important;
+  }
+  body.dark-theme .nav__list .nav__item {
+    background: transparent !important;
+  }
+  body.dark-theme .nav__link {
+    background: transparent !important;
+    padding: 0.35rem 0.5rem !important;
+    border-radius: 0 !important;
+  }
+
   /* Home desktop: text left, image absolute right */
   .home {
     padding: 8rem 0 2rem;
